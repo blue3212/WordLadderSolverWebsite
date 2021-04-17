@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<style>
+html
+{
+    background-color: lightslategrey;
+}
+.header
+{
+    font-size: 40px;
+    text-align: center;
+}
+#gamewindow
+{
+    width: 50vw;
+    height: 50vh;
+    border: 15px solid green;
+    padding: 50px;
+    margin: 20px;
+    position: relative;
+    top: 50%;
+    left: 20%;
+    background-color: lightblue;
+}
+#frame1
+{
+    font-family:Arial, Helvetica, sans-serif;
+    font-size: 40px;
+    text-align: center;
+    text-justify: center;   
+}
+#startButton
+{
+    cursor: pointer;
+}
+#frame2
+{
+    display: none;
+}
+#load
+{
+    display: none;
+}
+#frame3
+{
+    display: none;
+    word-break:keep-all;
+}
+</style>
+
+<html>
+    <title>
+        Hello
+    </title>
+    <h1 class = "header">
+        Wordladder Solver
+    </h1>
+    <div id = "gamewindow">
+        <div id = "frame1">
+             <p id = "startButton" onclick = replaceFrame("frame1","frame2")>Start Solver</p>
+        </div>
+        <div id = "frame2">
+            <p>Insert your starting and ending words. They must be of the same length.</p>
+            <form id = "wordForm" onsubmit="checkWordLengths()">
+                <label for="beginWord">Starting Word:</label><br>
+                <input type="text" id="beginWord" name="beginWord"><br>
+                <label for="endWord">Ending Word:</label><br>
+                <input type="text" id="endWord" name="endWord"><br>
+                <input id = "wordSubmit" type="submit" value="Submit">
+                <p id="load">Loading...</p>
+            </form>
+        </div>
+        <div id = "frame3">
+            <h2>BFS: <br></h2>
+            <p id = "BFS"></p>
+            <h2>biBFS: <br></h2>
+            <p id = "biBFS"></p>
+        </div>
+    </div>
+    </p>
+    <script>
+
+        document.getElementById("wordForm").addEventListener("submit",(event) => {event.preventDefault();})
+
+        function replaceFrame(hide,reveal)
+        {   
+
+            let opa = 1;
+            let hideDoc = document.getElementById(hide);
+            let revealDoc = document.getElementById(reveal);
+            let it1 = setInterval(() => 
+            {
+                if(opa <= 0)
+                {
+                    clearInterval(it1);
+                }
+                opa -= 0.01;
+                hideDoc.style.opacity = opa;
+            }, 10);
+            let it2 = setInterval(() => 
+            {
+                if(opa <= 0)
+                {
+                    hideDoc.style.display = "none";
+                    setTimeout(() => 
+                    {
+                        revealDoc.style.display = "block";    
+                    }, 0.09); 
+                    let it3 = setInterval(() => 
+                    {
+                        if(opa >= 1)
+                        {
+                            clearInterval(it3);
+                        }
+                        opa += 0.01;
+                        revealDoc.style.opacity = opa;
+                    }, 10);
+                    clearInterval(it2);
+                }
+            }, 5);
+
+
+
+        };
+        function checkWordLengths()
+        {
+            
+            let word1 = (document.getElementById("wordForm").elements[0].value);
+            let word2 = (document.getElementById("wordForm").elements[1].value);
+            word1 = word1.trim();
+            word2 = word2.trim();
+            word1 = word1.toLowerCase();
+            word2 = word2.toLowerCase();
+
+            if(word1.length != word2.length)
+            {
+                alert("The word lengths do not match! Please try again.");
+                return;
+            }
+            document.getElementById("load").style.display = "block";
+            let xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() 
+            {
+
+                if (this.readyState == 4 && this.status == 200)
+                { 
+                    word1Bool = (this.responseText).substring(0,this.responseText.indexOf('&'));
+                    word2Bool = (this.responseText).substring(this.responseText.indexOf('&')+1);
+                    let alertTxt = "";
+                    
+                    if(word1Bool == "false")
+                    {
+                        alertTxt += "Starting word is not valid!\n";
+                    }
+                    if(word2Bool == "false")
+                    {
+                        alertTxt += "Ending word is not valid!\n";
+                    }
+                    if(alertTxt.length > 0)
+                    {
+                        document.getElementById("load").style.display = "none";
+                        alert(alertTxt);
+                        return;
+                    }
+                    else
+                    {
+                        let xhttp = new XMLHttpRequest();
+                        xhttp.onreadystatechange = function() 
+                        {
+                            if (this.readyState == 4 && this.status == 200)
+                            { 
+                                let res = this.responseText;
+                                document.getElementById("BFS").innerHTML = res.substring(0,res.indexOf("^"));
+                                document.getElementById("biBFS").innerHTML = res.substring(res.indexOf("^")+1);;
+                                document.getElementById("load").style.display = "none";
+                                replaceFrame("frame2","frame3");
+                            }
+                        };
+                        xhttp.open("GET","http://localhost/wordladder_helper/wordladder_helper.cgi?functionName=searchResults&parameters="+word1+"&"+word2);
+                        xhttp.send();        
+                        return;
+                    }
+                    
+                }
+            }
+            xhttp.open("GET","http://localhost/wordladder_helper/wordladder_helper.cgi?functionName=checkValidity&parameters="+word1+"&"+word2);
+            xhttp.send();        
+            return;
+        };
+    </script>
+</html>
